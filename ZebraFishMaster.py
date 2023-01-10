@@ -1,15 +1,19 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import os
-import tkinter
-from numpy import *
-from matplotlib.pyplot import *
-from tkinter import filedialog
+import random
+from threading import Thread
+from time import sleep, time, ctime, strptime, mktime
+
+import numpy as np
+import matplotlib.pyplot as plt
 from serial import Serial
 from serial.tools import list_ports
-#from scipy.interpolate import interp1d
-from threading import Thread
-from time import *
+import tkinter
+
+from utils.fish_logging import load_logger
+
+logger = load_logger()
 
 #+++++++++++++++++++++++++++++++
 #
@@ -17,7 +21,7 @@ from time import *
 #
 #+++++++++++++++++++++++++++++++
 class STM:
-    s = None
+    s: Serial = None
     def __init__(self, tty, tm):
         self.tty = tty
         self.init(tm)
@@ -35,12 +39,12 @@ class STM:
         rpl = self.s.readline()
         rpl = self.s.readline()
         if rpl == b'':
-            print(' - '+tty+' did not respond!!!')
+            logger.error('{} did not respond!!!'.format(tty))
             return 0
         try:
             rpl = int(rpl.strip().decode())
         except:
-            print(' - converting to int FAILED. '+tty+' responded: '+rpl)
+            logger.error('converting to int FAILED. {} responded: {}'.format(tty, rpl))
             return 0
 
         if rpl == 167321907:
@@ -58,7 +62,7 @@ class STM:
             rpl = int(self.s.readline().strip().decode())
             return (rpl / 1000.0) + CAL[unit - 1]
         except:
-            print('   temperature data read failed: unit #%d' % unit + ' - '+ ctime())
+            logger.error('temperature data read failed: unit #{}'.format(unit))
             return 7777777
 
     def GetIllumination(self, unit):
@@ -69,7 +73,7 @@ class STM:
             rpl = int(self.s.readline().strip().decode())
             return rpl
         except:
-            print('   illumination data read failed: unit #%d' % unit + ' - '+ ctime())
+            logger.error('illumination data read failed: unit #{}'.format(unit))
             return 7777777
 
     def SwithcPowerOn(self, pwrtime):
@@ -78,10 +82,62 @@ class STM:
             rpl = self.s.readline()
             rpl = self.s.readline()
         except:
-            print('   power switch failed - ' + ctime())
+            logger.error('power switch failed')
             return 7777777
+
+
+class STM_fake:
+    def __init__(self, tty, tm):
+        self.tty = tty
+        self.init(tm)
+
+    def init(self, tm):
+        self.s = None
+
+    def hello(self, tty):
+        rpl = b'' if random.random() < 0.01 else b'167321907'
+        if rpl == b'':
+            logger.error('{} did not respond!!!'.format(tty))
+            return 0
+        try:
+            rpl = int(rpl.strip().decode())
+        except:
+            logger.error('converting to int FAILED. {} responded: {}'.format(tty, rpl))
+            return 0
+
+        if rpl == 167321907:
+            return 1
+        else:
+            return 0
+
+    def GetTemperature(self, unit):
+        try: 
+            rpl = (25 + random.gauss(0, 0.5)) * 1000
+            return (rpl / 1000.0) + CAL[unit - 1]
+        except:
+            logger.error('temperature data read failed: unit #{}'.format(unit))
+            return 7777777
+
+    def GetIllumination(self, unit):
+        try:
+            unit += 128
+            rpl = int(1020 + random.gauss(0, 10))
+            return rpl
+        except:
+            logger.error('illumination data read failed: unit #{}'.format(unit))
+            return 7777777
+
+    def SwithcPowerOn(self, pwrtime):
+        if random.random() < 0.01:
+            logger.error('power switch failed')
+            return 7777777
+
+
+STM = STM_fake
+
+
 # This one creates a list of the COM ports and ties to communicate with them.
-# In case if the device responds correctly, it creates a serial STM class device
+# In case if the device responds correctly, it creates a serial STM_fake class device
 # Be careful, as the function will recognize and return the first appropriate device, which is an occasional choise!
 def Device():
     success = 0
@@ -89,46 +145,53 @@ def Device():
     for p in range(len(CPlist)):
         dev = CPlist[p].device
         try:
-            tmp   = STM(tty = dev, tm = 0.5)
+            tmp  = STM(tty = dev, tm = 0.5)
             reply = tmp.hello(dev)
-            print(reply)
+            logger.debug('device reply: {}'.format(reply))
             if reply:
-                print(' - '+dev+' device is a valid VCP ERG-device and now connected!!!')
+                logger.debug('device {} is a valid VCP ERG-device and now connected'.format(dev))
                 return STM(tty = dev, tm = 3)
             else:
-                print(' - '+dev+' device is not a valid VCP ERG-device!!!')
+                logger.error('device {} is not a valid VCP ERG-device'.format(dev))
         except:
             pass
 
         return 0
+
 
 def MakeMeasurement():
     TLOG     = []
     MAXPOWER = 300 # Watts. Heater nominal power
     POWER    = 200 # Initial guess. Should be corrected according to the experimental data.
 
-    while 1:
+    while True:
         stm32 = Device()
-        tmp = []
         if stm32:
             tm = time()
             # TEMPERATURE
             W.write(ctime() + '\t')
+            tmp = []
             for p in range(26):
-            #for p in range(5):
                 success = 0
                 while not success:
                     temp = stm32.GetTemperature(p + 1)
                     if temp != 7777777:
-                        print("temp", p+1, temp)
+                        msg = 'termosensor {}: T = {:.2f}'.format(p+1, temp)
+                        if abs(temp - refT) > alarmT:
+                            logger.warning(msg)
+                        else:
+                            logger.info(msg)
                         tmp.append(temp)
                         success = 1
                     else:
+                        logger.error('termosensor {} returned code {}, reconnecting'.format(p+1, temp))
                         stm32 = 0
                         while not stm32:
                             tm = time()
                             stm32 = Device()
-                            sleep(1.0)
+                            if not stm32:
+                                logger.error("reconnection failed, retrying")
+                            sleep(2.0)
                 # write the data
                 W.write('%7.2f' % temp)
                 # update the monitor
@@ -139,22 +202,30 @@ def MakeMeasurement():
                     tBT[p]['bg'] = 'green'
             W.write('\n')
             W.flush()
+
             # ILLUMINATION
             for p in range(4):
             #for p in range(1):
                 success = 0
                 while not success:
-                    #ilum = stm32.GetIllumination(p + 1)
-                    ilum = alarmL + 10 
+                    ilum = stm32.GetIllumination(p + 1)
+                    # ilum = alarmL + 10 
                     if ilum != 7777777:
-                        print("ilum", p+1, ilum)
+                        msg = 'ilumosensor {}: I = {}'.format(p+1, ilum)
+                        if ilum < alarmL:
+                            logger.warning(msg)
+                        else:
+                            logger.info(msg)
                         success = 1
                     else:
+                        logger.error('ilumosensor {} returned code {}, reconnecting'.format(p+1, ilum))
                         stm32 = 0
                         while not stm32:
                             tm = time()
                             stm32 = Device()
-                            sleep(1.0)
+                            if not stm32:
+                                logger.error("reconnection failed, retrying")
+                            sleep(2.0)
                 # update the monitor
                 if ilum < alarmL:
                     iBT[p]['bg'] = 'red'
@@ -164,37 +235,38 @@ def MakeMeasurement():
             #meanT = mean(tmp)
             sleep(mfreq - (time() - tm))
         else:
-            print(' - device connection failed, retrying. ' + ctime())
+            logger.error('device connection failed, retrying')
             sleep(1.0)
 
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         # heating part of the deamon!!!
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        TLOG.append(mean(tmp))
+        TLOG.append(np.mean(tmp))
         if len(TLOG) > 30:
             TLOG = TLOG[-30:]
             # reat angle
-            angR = polyfit(linspace(0,30*mfreq,30), TLOG ,1)[0]
+            angR = np.polyfit(np.linspace(0,30*mfreq,30), TLOG ,1)[0]
             # real delta
-            dltT = refT - mean(TLOG)
+            dltT = refT - np.mean(TLOG)
             # desired ange, to reach the reference after an hour
-            angD = arctan(dltT / 1.125*3600)
+            angD = np.arctan(dltT / 1.125*3600)
             # coef, heat capacity and the mass of water
             coef = 4200 * waterMass
             # desired power
-            #print(POWER, angD, angR, coef)
+            logger.debug('POWER: {}, angD: {}, angR: {}, coef: {}'.format(POWER, angD, angR, coef))
             POWER = POWER + (angD - angR) * coef
             if POWER < 0:
                 POWER = 0
             elif POWER > MAXPOWER:
                 POWER = MAXPOWER
-            print('POWER: %dW' % POWER)
+            logger.info('POWER: {}W'.format(POWER))
             # switch power on. 29800 - is a bit less than 30 seconds
             stm32.SwithcPowerOn(round(29800 * POWER / MAXPOWER))
         # disconnect the device
         stm32 = 0
-    
+
+
 def plotGraph(unit):
     F = open(fname, 'r')
     lines = F.readlines()
@@ -202,13 +274,13 @@ def plotGraph(unit):
     D = []
     for line in lines:
         D.append([mktime(strptime(line[:24])), float(line[24:].split()[unit])])
-    D = array(D)
-    plot(D[:,0] - D[0,0], D[:,1], color = cmap(unit / 25.0), lw = 2, label = 'unit %d' % (unit + 1))
-    title('Temperature for the last day')
-    xlabel('time, sec')
-    ylabel('temperature, $^\circ$C')
-    legend()
-    show()
+    D = np.array(D)
+    plt.plot(D[:,0] - D[0,0], D[:,1], color = cmap(unit / 25.0), lw = 2, label = 'unit %d' % (unit + 1))
+    plt.title('Temperature for the last day')
+    plt.xlabel('time, sec')
+    plt.ylabel('temperature, $^\circ$C')
+    plt.legend()
+    plt.show()
 
 
 def QUIT():
@@ -232,11 +304,15 @@ CAL    = [ 0.01, -0.26, -0.09, -0.12,  0.18,
            0.18]
 
 
-cmap   = get_cmap('rainbow')
+cmap  = plt.get_cmap('rainbow')
 
 # OUTPUT LOG-FILE
 dt = strptime(ctime())
-fname = 'ErgZebraTemp-%04d.%02d.%02d-%02d:%02d.log' % (dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min)
+dname = os.path.join(os.path.dirname(__file__), 'logs')
+os.makedirs(dname, exist_ok=True)
+fname = os.path.join(
+    dname, 'ErgZebraTemp-%04d-%02d-%02d-%02d-%02d.log' % (dt.tm_year, dt.tm_mon, dt.tm_mday, dt.tm_hour, dt.tm_min),
+)
 W = open(fname, 'w')
 
 # WINDOW STUFF
