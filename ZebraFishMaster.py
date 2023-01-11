@@ -2,25 +2,25 @@
 
 import os
 import random
-import subprocess
+from subprocess import PIPE, Popen
 from threading import Thread
 from time import sleep, time, ctime, strptime, mktime
 
 import numpy as np
 import matplotlib.pyplot as plt
+import requests
 from serial import Serial
 from serial.tools import list_ports
 import tkinter
 
 from utils.fish_logging import load_logger
 
+URL_SEND_MESSAGES="http://127.0.0.1:5000/file-upload"
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
-KANT_SERVER = os.environ.get("KANT_SERVER")
 NUMBER_OF_MESSAGES_TO_SEND = 60
+PERIODICITY = 1  # min
 
 logger = load_logger()
-bash_command = "tail -{} fish_factory.log > {} && scp {} {}:fish-factory-watchdog/last_message.log".format(
-    NUMBER_OF_MESSAGES_TO_SEND, PATH_TO_TMP_MESSAGE, PATH_TO_TMP_MESSAGE, KANT_SERVER)
 
 
 #+++++++++++++++++++++++++++++++
@@ -120,8 +120,8 @@ class STM_fake:
 
     def GetTemperature(self, unit):
         try: 
-            rpl = (25 + random.gauss(0, 0.5)) * 1000
-            return (rpl / 1000.0) + CAL[unit - 1]
+            rpl = (25 + random.gauss(0, 0.2)) * 1000
+            return (rpl / 1000.0)
         except:
             logger.error('temperature data read failed: unit #{}'.format(unit))
             return 7777777
@@ -276,12 +276,25 @@ def MakeMeasurement():
         stm32 = 0
 
         # send logs to server
-        if i % int(15 / (mfreq / 60)) == 0:
-            process = subprocess.Popen(bash_command.split(), stdout=subprocess.PIPE)
-            output, error = process.communicate()
+        if i % int(PERIODICITY / (mfreq / 60)) == 0:
+            send_messages_to_server()
             i = 0
         else:            
             i += 1
+
+
+def send_messages_to_server():
+    with open(PATH_TO_TMP_MESSAGE, "w") as fout:
+        p = Popen(['tail', "-{}".format(NUMBER_OF_MESSAGES_TO_SEND), "fish_factory.log"], stdout=fout)
+        p.communicate()
+
+    with open(PATH_TO_TMP_MESSAGE, "rb") as fin:
+        files = {'file': fin}
+        try:
+            r = requests.post(URL_SEND_MESSAGES, files=files)
+            logger.debug(repr(r))
+        except Exception as e:
+            logger.error("Cannot send message: " + repr(e))
 
 
 def plotGraph(unit):

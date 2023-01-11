@@ -3,3 +3,5 @@ pyserial
 matplotlib
 PyYAML~=6.0
 discord.py~=2.1.0
+flask~=2.2.2
+requests
