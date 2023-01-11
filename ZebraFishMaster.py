@@ -2,6 +2,7 @@
 
 import os
 import random
+import subprocess
 from threading import Thread
 from time import sleep, time, ctime, strptime, mktime
 
@@ -13,7 +14,14 @@ import tkinter
 
 from utils.fish_logging import load_logger
 
+PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
+KANT_SERVER = os.environ.get("KANT_SERVER")
+NUMBER_OF_MESSAGES_TO_SEND = 60
+
 logger = load_logger()
+bash_command = "tail -{} fish_factory.log > {} && scp {} {}:fish-factory-watchdog/last_message.log".format(
+    NUMBER_OF_MESSAGES_TO_SEND, PATH_TO_TMP_MESSAGE, PATH_TO_TMP_MESSAGE, KANT_SERVER)
+
 
 #+++++++++++++++++++++++++++++++
 #
@@ -164,6 +172,7 @@ def MakeMeasurement():
     MAXPOWER = 300 # Watts. Heater nominal power
     POWER    = 200 # Initial guess. Should be corrected according to the experimental data.
 
+    i = 0
     while True:
         stm32 = Device()
         if stm32:
@@ -176,7 +185,7 @@ def MakeMeasurement():
                 while not success:
                     temp = stm32.GetTemperature(p + 1)
                     if temp != 7777777:
-                        msg = 'termosensor {}: T = {:.2f}'.format(p+1, temp)
+                        msg = 'thermosensor {}: T = {:.2f}'.format(p+1, temp)
                         if abs(temp - refT) > alarmT:
                             logger.warning(msg)
                         else:
@@ -184,7 +193,7 @@ def MakeMeasurement():
                         tmp.append(temp)
                         success = 1
                     else:
-                        logger.error('termosensor {} returned code {}, reconnecting'.format(p+1, temp))
+                        logger.error('thermosensor {} returned code {}, reconnecting'.format(p+1, temp))
                         stm32 = 0
                         while not stm32:
                             tm = time()
@@ -265,6 +274,14 @@ def MakeMeasurement():
             stm32.SwithcPowerOn(round(29800 * POWER / MAXPOWER))
         # disconnect the device
         stm32 = 0
+
+        # send logs to server
+        if i % int(15 / (mfreq / 60)) == 0:
+            process = subprocess.Popen(bash_command.split(), stdout=subprocess.PIPE)
+            output, error = process.communicate()
+            i = 0
+        else:            
+            i += 1
 
 
 def plotGraph(unit):
