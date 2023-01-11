@@ -217,8 +217,8 @@ def MakeMeasurement():
             #for p in range(1):
                 success = 0
                 while not success:
-                    ilum = stm32.GetIllumination(p + 1)
-                    # ilum = alarmL + 10 
+                    # ilum = stm32.GetIllumination(p + 1)
+                    ilum = alarmL + 10 
                     if ilum != 7777777:
                         msg = 'ilumosensor {}: I = {}'.format(p+1, ilum)
                         if ilum < alarmL:
