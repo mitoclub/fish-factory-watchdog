@@ -85,10 +85,10 @@ async def on_ready():
         g = discord.utils.get(client.guilds, name="mitoclub")
 
         # role = discord.utils.get(g.roles, name="fisherman")
-        # user1 = g.get_member_named("byqot")
+        user1 = g.get_member_named("byqot")
         user2 = g.get_member_named("kpotoh")
 
-        messages = read_messages(sys.stdin, user2.mention, user2.mention)  # role.mention
+        messages = read_messages(sys.stdin, user1.mention, user2.mention)  # role.mention
         for m in messages:
             await ch.send(m)
         

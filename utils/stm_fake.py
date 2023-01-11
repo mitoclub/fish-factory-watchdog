@@ -4,13 +4,6 @@ from utils.fish_logging import load_logger
 
 logger = load_logger()
 
-CAL    = [ 0.01, -0.26, -0.09, -0.12,  0.18,
-          -0.07, -0.05,  0.20, -0.03, -0.06,
-          -0.01, -0.02, -0.09, -0.02,  0.04,
-           0.00,  0.18,  0.02, -0.49, -0.04,
-           0.03, -0.05,  0.16,  0.02,  0.05,
-           0.18]
-
 
 class STM_fake:
     def __init__(self, tty, tm):
@@ -38,8 +31,8 @@ class STM_fake:
 
     def GetTemperature(self, unit):
         try: 
-            rpl = (25 + random.gauss(0, 0.5)) * 1000
-            return (rpl / 1000.0) + CAL[unit - 1]
+            rpl = (25 + random.gauss(0, 0.2)) * 1000
+            return (rpl / 1000.0)
         except:
             logger.error('temperature data read failed: unit #{}'.format(unit))
             return 7777777

@@ -241,6 +241,11 @@ def MakeMeasurement():
                 else:
                     iBT[p]['bg'] = 'green'
 
+            # send logs to server
+            if i % int(PERIODICITY / (mfreq / 60)) == 0:
+                send_messages_to_server()
+            i += 1
+            
             #meanT = mean(tmp)
             sleep(mfreq - (time() - tm))
         else:
@@ -255,7 +260,7 @@ def MakeMeasurement():
         if len(TLOG) > 30:
             TLOG = TLOG[-30:]
             # reat angle
-            angR = np.polyfit(np.linspace(0,30*mfreq,30), TLOG ,1)[0]
+            angR = np.polyfit(np.linspace(0,30*mfreq,30), TLOG, 1)[0]
             # real delta
             dltT = refT - np.mean(TLOG)
             # desired ange, to reach the reference after an hour
@@ -274,13 +279,6 @@ def MakeMeasurement():
             stm32.SwithcPowerOn(round(29800 * POWER / MAXPOWER))
         # disconnect the device
         stm32 = 0
-
-        # send logs to server
-        if i % int(PERIODICITY / (mfreq / 60)) == 0:
-            send_messages_to_server()
-            i = 0
-        else:            
-            i += 1
 
 
 def send_messages_to_server():
