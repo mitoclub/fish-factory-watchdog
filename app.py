@@ -25,8 +25,8 @@ def send_messages(path=None, msg=None):
 		p1 = Popen(['cat', path], stdout=PIPE)
 	elif isinstance(msg, str):
 		p1 = Popen(['echo', msg], stdout=PIPE)
-	p2 = Popen(["./bot.py"], stdin=p1.stdout, stdout=PIPE)
-	output, error = p2.communicate()
+	p2 = Popen(['python3.8', 'bot.py'], stdin=p1.stdout, stdout=PIPE)  # python3.8 explicitly
+	p2.communicate()
 
 
 @app.route('/file-upload', methods=['POST'])
