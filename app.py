@@ -7,6 +7,10 @@ import os
 from subprocess import PIPE, Popen
 from flask import Flask, request, redirect, jsonify
 
+from utils.fish_logging import load_logger
+
+logger = load_logger(filename="api_history.log")
+
 UPLOAD_FOLDER = os.path.dirname(__file__)
 ALLOWED_EXTENSIONS = set(['txt', 'log'])
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
@@ -29,7 +33,7 @@ def send_messages(path=None, msg=None):
 	p2.communicate()
 
 
-@app.route('/file-upload', methods=['POST'])
+@app.route('/fish/file-upload', methods=['POST'])
 def upload_file():
     # check if the post request has the file part
     if 'file' not in request.files:

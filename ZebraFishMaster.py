@@ -15,10 +15,10 @@ import tkinter
 
 from utils.fish_logging import load_logger
 
-URL_SEND_MESSAGES="http://bioinfo.int.kantiana.ru:5000/file-upload"
+URL_SEND_MESSAGES = os.environ.get("FISH_PROXY_SERVER")
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
 NUMBER_OF_MESSAGES_TO_SEND = 60
-PERIODICITY = 1  # min
+PERIODICITY = 15  # min
 
 logger = load_logger()
 
