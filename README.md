@@ -1,5 +1,7 @@
 # Fish factory watchdog
 
+<img src="./figures/watchdog.jpg" alt="drawing" width="400"/>
+
 Scripts for remote aquarium sensors information collection
 
 ## How to run watchdog
