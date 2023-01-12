@@ -227,7 +227,6 @@ def MakeMeasurement():
                 POWER = 0
             elif POWER > MAXPOWER:
                 POWER = MAXPOWER
-            if isinstance(POWER, (int, float))
             logger.info('POWER: {}W'.format(POWER))
             # switch power on. 29800 - is a bit less than 30 seconds
             stm32.SwithcPowerOn(round(29800 * POWER / MAXPOWER))
