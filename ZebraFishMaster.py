@@ -164,6 +164,7 @@ def MakeMeasurement():
             W.write('\n')
             W.flush()
             meanT = np.mean(tmp)
+            logger.info("mean T = {}".format(meanT))
 
             # ILLUMINATION
             for p in range(4):
@@ -277,9 +278,9 @@ def QUIT():
 # VC and STM class creation
 
 mfreq  = 30     # seconds between the measurements
-alarmT = 1.0    # degrees of the deviation to color the button in red
+alarmT = 2.0    # degrees of the deviation to color the button in red
 alarmL = 1000   # arbitrary units of illumination
-refT   = 23     # reference temperature
+refT   = 25     # reference temperature
 waterMass = 500 # total mass of water in fish factory
 
 CAL    = [ 0.01, -0.26, -0.09, -0.12,  0.18,
