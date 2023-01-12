@@ -156,7 +156,7 @@ def MakeMeasurement():
                 # update the monitor
                 tBT[p]['text'] = '%5.2f' % temp
                 if  temp < 5 or temp > 40:
-                    tBT[p]['bg'] = 'yellow'
+                    tBT[p]['bg'] = 'gray'
                 elif abs(temp - refT) > alarmT:
                     tBT[p]['bg'] = 'red'
                 else:
@@ -277,9 +277,9 @@ def QUIT():
 # VC and STM class creation
 
 mfreq  = 30     # seconds between the measurements
-alarmT = 0.5    # degrees of the deviation to color the button in red
+alarmT = 1.0    # degrees of the deviation to color the button in red
 alarmL = 1000   # arbitrary units of illumination
-refT   = 25     # reference temperature
+refT   = 23     # reference temperature
 waterMass = 500 # total mass of water in fish factory
 
 CAL    = [ 0.01, -0.26, -0.09, -0.12,  0.18,
