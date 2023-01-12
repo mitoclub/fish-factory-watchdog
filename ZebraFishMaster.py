@@ -200,7 +200,7 @@ def MakeMeasurement():
                 send_messages_to_server()
             i += 1
             
-            sleep(mfreq - (time() - tm))
+            sleep(max(1.0, mfreq - (time() - tm)))
         else:
             logger.error('device connection failed, retrying')
             sleep(1.0)
