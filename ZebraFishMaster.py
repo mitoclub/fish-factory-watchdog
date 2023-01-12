@@ -136,7 +136,9 @@ def MakeMeasurement():
                     temp = stm32.GetTemperature(p + 1)
                     if temp != 7777777:
                         msg = 'thermosensor {}: T = {:.2f}'.format(p+1, temp)
-                        if abs(temp - refT) > alarmT and (temp > 5 or temp < 40):  # CONTITIONS FOR TEMP WARNINGS
+                        if temp < 5 or temp > 40:
+                            logger.info(msg)
+                        elif abs(temp - refT) > alarmT:  # CONTITIONS FOR TEMP WARNINGS
                             logger.warning(msg)
                         else:
                             logger.info(msg)
@@ -155,7 +157,7 @@ def MakeMeasurement():
                 W.write('%7.2f' % temp)
                 # update the monitor
                 tBT[p]['text'] = '%5.2f' % temp
-                if  temp < 5 or temp > 40:
+                if temp < 5 or temp > 40:
                     tBT[p]['bg'] = 'gray'
                 elif abs(temp - refT) > alarmT:
                     tBT[p]['bg'] = 'red'
