@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import random
 from subprocess import PIPE, Popen
 from threading import Thread
 from time import sleep, time, ctime, strptime, mktime
@@ -94,56 +93,6 @@ class STM:
             return 7777777
 
 
-class STM_fake:
-    def __init__(self, tty, tm):
-        self.tty = tty
-        self.init(tm)
-
-    def init(self, tm):
-        self.s = None
-
-    def hello(self, tty):
-        rpl = b'' if random.random() < 0.01 else b'167321907'
-        if rpl == b'':
-            logger.error('{} did not respond!!!'.format(tty))
-            return 0
-        try:
-            rpl = int(rpl.strip().decode())
-        except:
-            logger.error('converting to int FAILED. {} responded: {}'.format(tty, rpl))
-            return 0
-
-        if rpl == 167321907:
-            return 1
-        else:
-            return 0
-
-    def GetTemperature(self, unit):
-        try: 
-            rpl = (25 + random.gauss(0, 0.2)) * 1000
-            return (rpl / 1000.0)
-        except:
-            logger.error('temperature data read failed: unit #{}'.format(unit))
-            return 7777777
-
-    def GetIllumination(self, unit):
-        try:
-            unit += 128
-            rpl = int(1020 + random.gauss(0, 10))
-            return rpl
-        except:
-            logger.error('illumination data read failed: unit #{}'.format(unit))
-            return 7777777
-
-    def SwithcPowerOn(self, pwrtime):
-        if random.random() < 0.01:
-            logger.error('power switch failed')
-            return 7777777
-
-
-STM = STM_fake
-
-
 # This one creates a list of the COM ports and ties to communicate with them.
 # In case if the device responds correctly, it creates a serial STM_fake class device
 # Be careful, as the function will recognize and return the first appropriate device, which is an occasional choise!
@@ -186,7 +135,7 @@ def MakeMeasurement():
                     temp = stm32.GetTemperature(p + 1)
                     if temp != 7777777:
                         msg = 'thermosensor {}: T = {:.2f}'.format(p+1, temp)
-                        if abs(temp - refT) > alarmT:
+                        if abs(temp - refT) > alarmT and (temp > 5 or temp < 40):  # CONTITIONS FOR TEMP WARNINGS
                             logger.warning(msg)
                         else:
                             logger.info(msg)
