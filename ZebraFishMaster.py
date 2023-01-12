@@ -155,7 +155,9 @@ def MakeMeasurement():
                 W.write('%7.2f' % temp)
                 # update the monitor
                 tBT[p]['text'] = '%5.2f' % temp
-                if abs(temp - refT) > alarmT:
+                if  temp < 5 or temp > 40:
+                    tBT[p]['bg'] = 'yellow'
+                elif abs(temp - refT) > alarmT:
                     tBT[p]['bg'] = 'red'
                 else:
                     tBT[p]['bg'] = 'green'
