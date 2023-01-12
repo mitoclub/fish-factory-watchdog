@@ -122,6 +122,7 @@ def MakeMeasurement():
     POWER    = 200 # Initial guess. Should be corrected according to the experimental data.
 
     i = 0
+    meanT = -10
     while True:
         stm32 = Device()
         if stm32:
@@ -207,6 +208,8 @@ def MakeMeasurement():
 
         if meanT is np.nan:
             logger.error("mean T is NaN; last 30 values of TLOG: {}".format(TLOG))
+        elif meanT == -10:
+            logger.debug("Init meanT")
         else:
             TLOG.append(meanT)
 
