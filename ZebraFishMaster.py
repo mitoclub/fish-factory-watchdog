@@ -139,7 +139,7 @@ def MakeMeasurement():
                             logger.warning(msg)
                         else:
                             logger.info(msg)
-                        tmp.append(temp)
+                            tmp.append(temp)
                         success = 1
                     else:
                         logger.error('thermosensor {} returned code {}, reconnecting'.format(p+1, temp))
@@ -160,6 +160,7 @@ def MakeMeasurement():
                     tBT[p]['bg'] = 'green'
             W.write('\n')
             W.flush()
+            meanT = np.mean(tmp)
 
             # ILLUMINATION
             for p in range(4):
@@ -195,7 +196,6 @@ def MakeMeasurement():
                 send_messages_to_server()
             i += 1
             
-            #meanT = mean(tmp)
             sleep(mfreq - (time() - tm))
         else:
             logger.error('device connection failed, retrying')
@@ -205,7 +205,11 @@ def MakeMeasurement():
         # heating part of the deamon!!!
         #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        TLOG.append(np.mean(tmp))
+        if meanT is np.nan:
+            logger.error("mean T is NaN; last 30 values of TLOG: {}".format(TLOG))
+        else:
+            TLOG.append(meanT)
+
         if len(TLOG) > 30:
             TLOG = TLOG[-30:]
             # reat angle
@@ -223,6 +227,7 @@ def MakeMeasurement():
                 POWER = 0
             elif POWER > MAXPOWER:
                 POWER = MAXPOWER
+            if isinstance(POWER, (int, float))
             logger.info('POWER: {}W'.format(POWER))
             # switch power on. 29800 - is a bit less than 30 seconds
             stm32.SwithcPowerOn(round(29800 * POWER / MAXPOWER))
