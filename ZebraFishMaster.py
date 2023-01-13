@@ -16,7 +16,7 @@ from utils.fish_logging import load_logger
 
 URL_SEND_MESSAGES = os.environ.get("FISH_PROXY_SERVER")
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
-NUMBER_OF_MESSAGES_TO_SEND = 60
+NUMBER_OF_MESSAGES_TO_SEND = 40
 PERIODICITY = 15  # min
 
 logger = load_logger()
@@ -140,6 +140,7 @@ def MakeMeasurement():
                             logger.info(msg)
                         elif abs(temp - refT) > alarmT:  # CONTITIONS FOR TEMP WARNINGS
                             logger.warning(msg)
+                            tmp.append(temp)
                         else:
                             logger.info(msg)
                             tmp.append(temp)

@@ -5,7 +5,7 @@ import sys
 
 import discord
 
-MAX_MESSAGE_SIZE = 1500
+MAX_MESSAGE_SIZE = 1700
 PATH_TO_LAST_MESSAGE = os.path.join(os.path.dirname(__file__), "last_message.log")
 
 token = os.environ.get("FISH_BOT_TOKEN")
