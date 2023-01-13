@@ -5,7 +5,10 @@ https://roytuts.com/python-flask-rest-api-file-upload/
 """
 import os
 from subprocess import PIPE, Popen
+import time
+
 from flask import Flask, request, redirect, jsonify
+from flask_apscheduler import APScheduler
 
 from utils.fish_logging import load_logger
 
@@ -14,11 +17,26 @@ logger = load_logger(filename="api_history.log")
 UPLOAD_FOLDER = os.path.dirname(__file__)
 ALLOWED_EXTENSIONS = set(['txt', 'log'])
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
+MAX_TIME_BETWEEN_SENDINGS = 20 # min
 
 app = Flask(__name__)
 app.secret_key = 'kusty_sireni'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 100_000  # bytes
+
+# initialize scheduler
+scheduler = APScheduler()
+scheduler.init_app(app)
+
+last_time = time.time()
+
+
+def get_timedelta_from_last_sending():
+    """ return timedelta in minuts """
+    td = time.time() - last_time
+    td /= 60
+    return td
+
 
 def allowed_file(filename):
 	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -60,8 +78,22 @@ def upload_file():
         print(repr(resp))
         send_messages(msg="ERROR: Cannot receive file, status code {}".format(resp.status_code))
 
+    global last_time
+    last_time = time.time()
     return resp
 
+
+@scheduler.task('interval', id='check-processing', minutes=20)
+def job1():
+    td = get_timedelta_from_last_sending()
+    if td > MAX_TIME_BETWEEN_SENDINGS:
+        send_messages(msg="ERROR: fish-factory don't send messages; last message was received {:.2f} min ago".format(td))
+        logger.warning("Time from last sending: {:.2f} min".format(td))
+    else:
+        logger.debug("Time from last sending: {:.2f} min".format(td))
+
+
+scheduler.start()
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=37894)

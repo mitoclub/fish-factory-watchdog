@@ -166,7 +166,7 @@ def MakeMeasurement():
             W.write('\n')
             W.flush()
             meanT = np.mean(tmp)
-            logger.info("mean T = {}".format(meanT))
+            logger.info("mean T = {:.2f}".format(meanT))
 
             # ILLUMINATION
             for p in range(4):
@@ -197,10 +197,6 @@ def MakeMeasurement():
                 else:
                     iBT[p]['bg'] = 'green'
 
-            # send logs to server
-            if i % int(PERIODICITY / (mfreq / 60)) == 0:
-                send_messages_to_server()
-            i += 1
             
             sleep(max(1.0, mfreq - (time() - tm)))
         else:
@@ -240,6 +236,11 @@ def MakeMeasurement():
             stm32.SwithcPowerOn(round(29800 * POWER / MAXPOWER))
         # disconnect the device
         stm32 = 0
+
+        # send logs to server
+        if i % int(PERIODICITY / (mfreq / 60)) == 0:
+            send_messages_to_server()
+        i += 1
 
 
 def send_messages_to_server():
