@@ -16,7 +16,7 @@ from utils.fish_logging import load_logger
 
 URL_SEND_MESSAGES = os.environ.get("FISH_PROXY_SERVER")
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
-NUMBER_OF_MESSAGES_TO_SEND = 40
+NUMBER_OF_MESSAGES_TO_SEND = 36
 PERIODICITY = 15  # min
 
 logger = load_logger()
@@ -284,7 +284,7 @@ def QUIT():
 mfreq  = 30     # seconds between the measurements
 alarmT = 2.0    # degrees of the deviation to color the button in red
 alarmL = 1000   # arbitrary units of illumination
-refT   = 25     # reference temperature
+refT   = 23     # reference temperature
 waterMass = 500 # total mass of water in fish factory
 
 CAL    = [ 0.01, -0.26, -0.09, -0.12,  0.18,
