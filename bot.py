@@ -24,7 +24,7 @@ def process_message(msg: str, mention="", odmen_mention="") -> str:
     elif "WARNING" in msg:
         msg = "**{}** {}\n".format(msg.strip(), mention)
     elif "ERROR" in msg:
-        msg = "**{}** {} {}\n".format(msg.strip(), mention, odmen_mention) 
+        msg = "**{}** {}\n".format(msg.strip(), odmen_mention) 
     return msg
 
 
