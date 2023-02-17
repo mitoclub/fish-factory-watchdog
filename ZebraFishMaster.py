@@ -12,14 +12,16 @@ from serial import Serial
 from serial.tools import list_ports
 import tkinter
 
-from utils.fish_logging import load_logger
+from utils import load_logger, load_config
+
+logger = load_logger()
+fish_config = load_config()
 
 URL_SEND_MESSAGES = os.environ.get("FISH_PROXY_SERVER")
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
-NUMBER_OF_MESSAGES_TO_SEND = 36
-PERIODICITY = 15  # min
+NUMBER_OF_MESSAGES_TO_SEND = fish_config["watch_nmessage_to_send"]
+PERIODICITY = fish_config["watch_periodicity"]  # min
 
-logger = load_logger()
 
 
 #+++++++++++++++++++++++++++++++
@@ -281,19 +283,12 @@ def QUIT():
 ###########################################################################################
 # VC and STM class creation
 
-mfreq  = 30     # seconds between the measurements
-alarmT = 2.0    # degrees of the deviation to color the button in red
-alarmL = 1000   # arbitrary units of illumination
-refT   = 23     # reference temperature
-waterMass = 500 # total mass of water in fish factory
-
-CAL    = [ 0.01, -0.26, -0.09, -0.12,  0.18,
-          -0.07, -0.05,  0.20, -0.03, -0.06,
-          -0.01, -0.02, -0.09, -0.02,  0.04,
-           0.00,  0.18,  0.02, -0.49, -0.04,
-           0.03, -0.05,  0.16,  0.02,  0.05,
-           0.18]
-
+mfreq  = fish_config["watch_mfreq"]     # seconds between the measurements
+alarmT = fish_config["watch_alarmT"]     # degrees of the deviation to color the button in red
+alarmL = fish_config["watch_alarmL"]     # arbitrary units of illumination
+refT   = fish_config["watch_refT"]     # reference temperature
+waterMass = fish_config["watch_waterMass"]  # total mass of water in fish factory
+CAL = fish_config["watch_CAL"]
 
 cmap  = plt.get_cmap('rainbow')
 

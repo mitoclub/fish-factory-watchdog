@@ -10,19 +10,22 @@ import time
 from flask import Flask, request, redirect, jsonify
 from flask_apscheduler import APScheduler
 
-from utils.fish_logging import load_logger
+from utils import load_logger, load_config
 
-logger = load_logger(filename="api_history.log")
+fish_config = load_config()
+
+path_to_logs = os.path.join(os.path.dirname(__file__), "api_history.log")
+logger = load_logger(filename=path_to_logs)
 
 UPLOAD_FOLDER = os.path.dirname(__file__)
-ALLOWED_EXTENSIONS = set(['txt', 'log'])
+ALLOWED_EXTENSIONS = set(fish_config["allowed_extention"])
 PATH_TO_TMP_MESSAGE = os.path.join(os.path.dirname(__file__), "tmp_message.log")
-MAX_TIME_BETWEEN_SENDINGS = 20 # min
+TD_MAX = fish_config["app_max_time_between_sendings"]
 
 app = Flask(__name__)
 app.secret_key = 'kusty_sireni'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 100_000  # bytes
+app.config['MAX_CONTENT_LENGTH'] = fish_config["app_max_content_lenght"]  # bytes
 
 # initialize scheduler
 scheduler = APScheduler()
@@ -34,7 +37,7 @@ last_time = time.time()
 def get_timedelta_from_last_sending():
     """ return timedelta in minuts """
     td = time.time() - last_time
-    td /= 60
+    td /= 60  # to minutes
     return td
 
 
@@ -47,7 +50,7 @@ def send_messages(path=None, msg=None):
 		p1 = Popen(['cat', path], stdout=PIPE)
 	elif isinstance(msg, str):
 		p1 = Popen(['echo', msg], stdout=PIPE)
-	p2 = Popen(['python3.8', 'bot.py'], stdin=p1.stdout, stdout=PIPE)  # python3.8 explicitly
+	p2 = Popen([fish_config["app_python_cmd"], 'bot.py'], stdin=p1.stdout, stdout=PIPE)  # python3.8 explicitly
 	p2.communicate()
 
 
@@ -83,17 +86,17 @@ def upload_file():
     return resp
 
 
-@scheduler.task('interval', id='check-processing', minutes=20)
+@scheduler.task('interval', id='check-processing', minutes=TD_MAX - 1)
 def job1():
     td = get_timedelta_from_last_sending()
-    if td > MAX_TIME_BETWEEN_SENDINGS:
+    if td > TD_MAX:
         send_messages(msg="ERROR: fish-factory don't send messages; last message was received {:.2f} min ago".format(td))
         logger.warning("Time from last sending: {:.2f} min".format(td))
     else:
-        logger.debug("Time from last sending: {:.2f} min".format(td))
+        logger.info("Time from last sending: {:.2f} min".format(td))
 
 
 scheduler.start()
 
 if __name__ == '__main__':
-	app.run(host='0.0.0.0', port=37894)
+	app.run(host=fish_config["app_ip"], port=fish_config["app_port"])
